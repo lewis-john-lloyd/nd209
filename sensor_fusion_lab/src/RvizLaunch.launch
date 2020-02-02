@@ -1,0 +1,3 @@
+<launch>
+<node pkg="rviz" type="rviz" name="rviz" args="-d /home/robond/nd209/sensor_fusion_lab/src/EKFLab.rviz"/>
+</launch>
