@@ -1,0 +1,229 @@
+<?xml version='1.0'?>
+
+<robot name="my_robot" xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <xacro:include filename="$(find my_robot)/urdf/my_robot.gazebo" />
+  <xacro:property name="box_x" value="1.0"/>
+  <xacro:property name="box_y" value="0.3"/>
+  <xacro:property name="box_z" value="0.2"/>
+  <xacro:property name="ground_clearence" value="0.05"/>
+  <xacro:property name="box_mass" value="15.0"/>
+  <xacro:macro name="box_origin">
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+  </xacro:macro>
+
+  <xacro:macro name="box_viscol">
+    <xacro:box_origin />
+    <geometry>
+      <box size="${box_x} ${box_y} ${box_z}"/>
+    </geometry>
+  </xacro:macro>
+
+  
+  <xacro:property name="I_dia" value ="0.1"/>
+  <xacro:property name="I_off" value ="0"/>
+
+  <xacro:property name="wheel_radius" value="${(box_z+2.0*ground_clearence)/2.0}"/>
+  <xacro:property name="wheel_width" value="0.05"/>
+  <xacro:property name="wheel_mass" value="5.0"/>
+  <xacro:macro name="wheel_origin">
+    <origin xyz="0 0 0" rpy="0 ${pi/2} ${pi/2}"/>
+  </xacro:macro>
+
+  <xacro:macro name="inertia_tensor">
+    <inertia
+	ixx="${I_dia}" ixy="${I_off}"   ixz="${I_off}"
+	iyy="${I_dia}" iyz="${I_off}"
+	izz="${I_dia}"
+	/>
+  </xacro:macro>
+  <xacro:macro name="wheel_inertia">
+    <xacro:wheel_origin />
+    <mass value="${wheel_mass}"/>
+    <xacro:inertia_tensor />
+  </xacro:macro>
+
+  <xacro:macro name="wheel_viscol">
+    <xacro:wheel_origin />
+    <geometry>
+      <cylinder radius="${wheel_radius}" length="${wheel_width}"/>
+    </geometry>
+  </xacro:macro>
+  
+  <link name="robot_footprint"></link>
+
+  <joint name="robot_footprint_joint" type="fixed">
+    <xacro:box_origin />
+    <parent link="robot_footprint"/>
+    <child link="chassis" />
+  </joint>
+
+  <link name='chassis'>
+    <pose>"0 0 ${box_z/2.0 + ground_clearence} 0 0 0"</pose>
+    <inertial>
+      <mass value="${box_mass}"/>
+      <xacro:box_origin />
+      <xacro:inertia_tensor />
+    </inertial>
+
+    <collision name='collision'>
+      <xacro:box_viscol />
+    </collision>
+
+    <visual name='chassis_visual'>
+      <xacro:box_viscol />
+    </visual>
+
+    <collision name='back_caster_collision'>
+      <origin xyz="-${box_x/2.0-0.1-ground_clearence} 0 -${box_z/2.0}" rpy=" 0 0 0"/>
+      <geometry>
+	<sphere radius="${ground_clearence-0.0001}"/>
+      </geometry>
+    </collision>
+
+    <visual name='back_caster_visual'>
+      <origin xyz="-${box_x/2.0-0.1-ground_clearence} 0 -${box_z/2.0}" rpy=" 0 0 0"/>
+      <geometry>
+	<sphere radius="${ground_clearence}"/>
+      </geometry>
+    </visual>
+
+    <collision name='front_caster_collision'>
+      <origin xyz="${box_x/2.0-0.1-ground_clearence} 0 -${box_z/2.0}" rpy=" 0 0 0"/>
+      <geometry>
+	<sphere radius="${ground_clearence-0.0001}"/>
+      </geometry>
+    </collision>
+
+    <visual name='front_caster_visual'>
+      <origin xyz="${box_x/2.0-0.1-ground_clearence} 0 -${box_z/2.0}" rpy=" 0 0 0"/>
+      <geometry>
+	<sphere radius="${ground_clearence}"/>
+      </geometry>
+    </visual>
+
+  </link>
+
+  <gazebo reference="chassis">
+    <material>Gazebo/Purple</material>
+  </gazebo>
+
+  <link name="left_wheel">
+    <inertial>
+      <xacro:wheel_origin />
+      <xacro:wheel_inertia />
+    </inertial>
+    <visual>
+      <xacro:wheel_viscol />
+    </visual>
+    <collision>
+      <xacro:wheel_viscol />
+    </collision>
+  </link>
+
+  <joint type="continuous" name="left_wheel_hinge">
+    <origin xyz="0 ${box_y/2.0 + wheel_width} 0" rpy="0 0 0"/>
+    <child link="left_wheel"/>
+    <parent link="chassis"/>
+    <axis xyz="0 1 0" rpy="0 0 0"/>
+    <limit effort="10000" velocity="1000"/>
+    <dynamics damping="1.0" friction="1.0"/>
+  </joint>
+
+  <gazebo reference="left_wheel">
+    <material>Gazebo/Green</material>
+  </gazebo>
+    
+  <link name="right_wheel">
+    <inertial>
+      <xacro:wheel_origin />
+      <xacro:wheel_inertia />
+    </inertial>
+    <visual>
+      <xacro:wheel_viscol />
+    </visual>
+    <collision>
+      <xacro:wheel_viscol />
+    </collision>
+  </link>
+
+  <joint type="continuous" name="right_wheel_hinge">
+    <origin xyz="0 -${box_y/2.0 + wheel_width} 0" rpy="0 0 0"/>
+    <child link="right_wheel"/>
+    <parent link="chassis"/>
+    <axis xyz="0 1 0" rpy="0 0 0"/>
+    <limit effort="10000" velocity="1000"/>
+    <dynamics damping="1.0" friction="1.0"/>
+  </joint>
+
+  <gazebo reference="right_wheel">
+    <material>Gazebo/Green</material>
+  </gazebo>
+    
+  <link name="camera">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="0.1"/>
+      <inertia
+  	  ixx="1e-6" ixy="0" ixz="0"
+  	  iyy="1e-6" iyz="0"
+  	  izz="1e-6"
+  	  />
+    </inertial>
+
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+  	<box size="0.05 0.05 0.05"/>
+      </geometry>
+    </collision>
+
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+  	<box size="0.05 0.05 0.05"/>
+      </geometry>
+    </visual>
+  </link>
+
+  <joint type="fixed" name="camera_joint">
+    <origin xyz="${box_x/2.0 - 0.1} 0 0" rpy="0 0 0"/>
+    <child link="camera"/>
+    <parent link="chassis"/>
+    <axis xyz="0 1 0" rpy="0 0 0 "/>
+  </joint>
+
+  <link name="hokuyo">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="1e-5"/>
+      <inertia
+  	  ixx="1e-6" ixy="0" ixz="0"
+  	  iyy="1e-6" iyz="0"
+  	  izz="1e-6"
+  	  />
+    </inertial>
+
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+  	<box size="0.1 0.1 0.1"/>
+      </geometry>
+    </collision>
+
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+	<mesh filename="package://my_robot/meshes/hokuyo.dae"/>
+      </geometry>
+    </visual>
+  </link>
+
+  <joint type="fixed" name="hokuyo_joint">
+    <origin xyz="${box_x/2.0 -0.15} 0 ${box_z/2.0}" rpy="0 0 0"/>
+    <child link="hokuyo"/>
+    <parent link="chassis"/>
+    <axis xyz="0 1 0" rpy="0 0 0 "/>
+  </joint>
+
+</robot>
